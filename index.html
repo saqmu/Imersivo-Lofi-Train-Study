@@ -1169,4 +1169,442 @@
         root.style.setProperty('--banco-2', 'var(--banco-2-night)');
         root.style.setProperty('--banco-3', 'var(--banco-3-night)');
         root.style.setProperty('--banco-4', 'var(--banco-4-night)');
-        root.style.setProperty('--banco-5', 'var(--banco-5-ni
+        root.style.setProperty('--banco-5', 'var(--banco-5-night)');
+        root.style.setProperty('--mesa-1', 'var(--mesa-1-night)');
+        root.style.setProperty('--mesa-2', 'var(--mesa-2-night)');
+        root.style.setProperty('--mesa-3', 'var(--mesa-3-night)');
+        root.style.setProperty('--mesa-4', 'var(--mesa-4-night)');
+        root.style.setProperty('--mesa-5', 'var(--mesa-5-night)');
+      } else {
+        root.style.setProperty('--cabine-wall', 'var(--cabine-wall-day)');
+        root.style.setProperty('--cabine-frame', 'var(--cabine-frame-day)');
+        root.style.setProperty('--banco-1', 'var(--banco-1-day)');
+        root.style.setProperty('--banco-2', 'var(--banco-2-day)');
+        root.style.setProperty('--banco-3', 'var(--banco-3-day)');
+        root.style.setProperty('--banco-4', 'var(--banco-4-day)');
+        root.style.setProperty('--banco-5', 'var(--banco-5-day)');
+        root.style.setProperty('--mesa-1', 'var(--mesa-1-day)');
+        root.style.setProperty('--mesa-2', 'var(--mesa-2-day)');
+        root.style.setProperty('--mesa-3', 'var(--mesa-3-day)');
+        root.style.setProperty('--mesa-4', 'var(--mesa-4-day)');
+        root.style.setProperty('--mesa-5', 'var(--mesa-5-day)');
+      }
+      applySceneryPalette(currentScenery);
+    }
+
+    /* ============================================================
+       4. CENÁRIOS ESPECÍFICOS (Floresta, Cidade, Oceano, Deserto)
+       ============================================================ */
+    const skyCanvas = document.getElementById('skyCanvas');
+    const pathHill1 = document.getElementById('pathHill1');
+    const pathHill1b = document.getElementById('pathHill1b');
+    const pathHill2 = document.getElementById('pathHill2');
+    const pathHill2b = document.getElementById('pathHill2b');
+    const pathHill3 = document.getElementById('pathHill3');
+    const pathHill3b = document.getElementById('pathHill3b');
+
+    const layerActive4 = document.getElementById('layerActive4');
+    const layerActive5 = document.getElementById('layerActive5');
+    const layerPoles = document.getElementById('layerPoles');
+    const oceanWaves = document.getElementById('oceanWavesContainer');
+    const oceanRailing = document.getElementById('oceanRailing');
+    const cityCars = document.getElementById('cityCarsTrack');
+
+    let currentScenery = 'floresta';
+
+    // Modelos SVG Papercut
+    const svgTreeBig = `
+      <svg width="45" height="75" viewBox="0 0 45 75">
+        <rect x="20" y="52" width="6" height="23" fill="#4a3728"/>
+        <polygon points="22.5,5 5,30 40,30" fill="#2d6a4f"/>
+        <polygon points="22.5,20 2,46 43,46" fill="#1b4332"/>
+      </svg>
+    `;
+    const svgTreeSmall = `
+      <svg width="34" height="55" viewBox="0 0 34 55">
+        <rect x="15" y="38" width="4" height="17" fill="#4a3728"/>
+        <polygon points="17,3 4,24 30,24" fill="#40916c"/>
+        <polygon points="17,16 2,38 32,38" fill="#2d6a4f"/>
+      </svg>
+    `;
+
+    const svgCactusBig = `
+      <svg class="cactus-svg" width="40" height="70" viewBox="0 0 40 70">
+        <rect x="16" y="5" width="8" height="65" rx="4"/>
+        <path d="M6,25 L16,25 L16,33 L6,33 L6,15 L12,15 L12,20 L8,20" fill="currentColor"/>
+        <path d="M24,32 L34,32 L34,40 L24,40 L24,20 L30,20 L30,26 L26,26" fill="currentColor"/>
+      </svg>
+    `;
+    const svgCactusSmall = `
+      <svg class="cactus-svg" width="28" height="48" viewBox="0 0 28 48">
+        <rect x="11" y="3" width="6" height="45" rx="3"/>
+        <path d="M4,18 L11,18 L11,24 L4,24 L4,10 L8,10 L8,14 L6,14" fill="currentColor"/>
+      </svg>
+    `;
+
+    function getCityBlockHTML(isSmall) {
+      const h1 = isSmall ? 55 : 85;
+      const h2 = isSmall ? 70 : 105;
+      const h3 = isSmall ? 45 : 75;
+      return `
+        <div class="city-block">
+          <div class="building" style="height:${h1}px">
+            <div class="b-window lit"></div><div class="b-window"></div>
+            <div class="b-window"></div><div class="b-window lit"></div>
+            <div class="b-window lit"></div><div class="b-window"></div>
+          </div>
+          <div class="building" style="height:${h2}px; width:56px;">
+            <div class="b-window"></div><div class="b-window lit"></div>
+            <div class="b-window lit"></div><div class="b-window lit"></div>
+            <div class="b-window"></div><div class="b-window lit"></div>
+          </div>
+          <div class="building" style="height:${h3}px">
+            <div class="b-window lit"></div><div class="b-window"></div>
+            <div class="b-window"></div><div class="b-window"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function applySceneryPalette(scenery) {
+      currentScenery = scenery;
+      
+      // Reseta visibilidade de extras
+      oceanWaves.style.display = 'none';
+      oceanRailing.style.display = 'none';
+      cityCars.style.display = 'none';
+      layerPoles.style.display = 'block'; // Ativo por padrão
+
+      if (scenery === 'floresta') {
+        skyCanvas.style.background = isNightMode ? 'var(--sky-night)' : 'var(--sky-day-floresta)';
+        pathHill1.setAttribute('fill', isNightMode ? '#152b21' : '#629b82');
+        pathHill1b.setAttribute('fill', isNightMode ? '#152b21' : '#629b82');
+        pathHill2.setAttribute('fill', isNightMode ? '#1b3b2c' : '#78b095');
+        pathHill2b.setAttribute('fill', isNightMode ? '#1b3b2c' : '#78b095');
+        pathHill3.setAttribute('fill', isNightMode ? '#0f2219' : '#4d7f69');
+        pathHill3b.setAttribute('fill', isNightMode ? '#0f2219' : '#4d7f69');
+        
+        layerActive4.innerHTML = svgTreeBig;
+        layerActive5.innerHTML = svgTreeSmall;
+      } 
+      else if (scenery === 'cidade') {
+        skyCanvas.style.background = isNightMode ? 'linear-gradient(180deg, #0b0c16 0%, #1c1d33 100%)' : 'linear-gradient(180deg, #9bb8cf 0%, #d8e5ee 100%)';
+        pathHill1.setAttribute('fill', isNightMode ? '#1e2430' : '#8091a0');
+        pathHill1b.setAttribute('fill', isNightMode ? '#1e2430' : '#8091a0');
+        pathHill2.setAttribute('fill', isNightMode ? '#283142' : '#95a7b8');
+        pathHill2b.setAttribute('fill', isNightMode ? '#283142' : '#95a7b8');
+        pathHill3.setAttribute('fill', isNightMode ? '#161b24' : '#6a7a8a');
+        pathHill3b.setAttribute('fill', isNightMode ? '#161b24' : '#6a7a8a');
+
+        layerActive4.innerHTML = getCityBlockHTML(false);
+        layerActive5.innerHTML = getCityBlockHTML(true);
+        cityCars.style.display = 'block';
+      }
+      else if (scenery === 'oceano') {
+        skyCanvas.style.background = isNightMode ? 'var(--sky-night)' : 'linear-gradient(180deg, #74b9ff 0%, #c4e0e5 100%)';
+        // No oceano as colinas simulam o horizonte baixo
+        pathHill1.setAttribute('fill', isNightMode ? '#072435' : '#1d6f9a');
+        pathHill1b.setAttribute('fill', isNightMode ? '#072435' : '#1d6f9a');
+        pathHill2.setAttribute('fill', isNightMode ? '#0a3249' : '#2281b3');
+        pathHill2b.setAttribute('fill', isNightMode ? '#0a3249' : '#2281b3');
+        pathHill3.setAttribute('fill', isNightMode ? '#051924' : '#17597b');
+        pathHill3b.setAttribute('fill', isNightMode ? '#051924' : '#17597b');
+
+        oceanWaves.style.display = 'block';
+        oceanRailing.style.display = 'block';
+        layerActive4.innerHTML = '';
+        layerActive5.innerHTML = '';
+      }
+      else if (scenery === 'deserto') {
+        skyCanvas.style.background = isNightMode ? 'var(--sky-deserto-night)' : 'var(--sky-deserto-day)';
+        pathHill1.setAttribute('fill', isNightMode ? '#422416' : '#d98b48');
+        pathHill1b.setAttribute('fill', isNightMode ? '#422416' : '#d98b48');
+        pathHill2.setAttribute('fill', isNightMode ? '#542f1d' : '#eb9e58');
+        pathHill2b.setAttribute('fill', isNightMode ? '#542f1d' : '#eb9e58');
+        pathHill3.setAttribute('fill', isNightMode ? '#331a0e' : '#b87035');
+        pathHill3b.setAttribute('fill', isNightMode ? '#331a0e' : '#b87035');
+
+        layerActive4.innerHTML = svgCactusBig;
+        layerActive5.innerHTML = svgCactusSmall;
+        layerPoles.style.display = 'none'; // Regra: Sem postes no deserto
+      }
+    }
+
+    // Botões de Cenário
+    const btnSceneryFloresta = document.getElementById('btnSceneryFloresta');
+    const btnSceneryCidade = document.getElementById('btnSceneryCidade');
+    const btnSceneryOceano = document.getElementById('btnSceneryOceano');
+    const btnSceneryDeserto = document.getElementById('btnSceneryDeserto');
+    const sceneryBtns = [btnSceneryFloresta, btnSceneryCidade, btnSceneryOceano, btnSceneryDeserto];
+
+    function setSceneryActive(btn, name) {
+      sceneryBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applySceneryPalette(name);
+    }
+
+    btnSceneryFloresta.addEventListener('click', () => setSceneryActive(btnSceneryFloresta, 'floresta'));
+    btnSceneryCidade.addEventListener('click', () => setSceneryActive(btnSceneryCidade, 'cidade'));
+    btnSceneryOceano.addEventListener('click', () => setSceneryActive(btnSceneryOceano, 'oceano'));
+    btnSceneryDeserto.addEventListener('click', () => setSceneryActive(btnSceneryDeserto, 'deserto'));
+
+    // Inicia no cenário padrão Floresta
+    applySceneryPalette('floresta');
+
+    /* ============================================================
+       5. SISTEMA DE CLIMA (CHUVA, NEVE, LIMPO)
+       ============================================================ */
+    const canvas = document.getElementById('weatherCanvas');
+    const ctx = canvas.getContext('2d');
+    const weatherDarken = document.getElementById('weatherDarken');
+    const weatherSnowTint = document.getElementById('weatherSnowTint');
+
+    let currentWeather = 'limpo';
+    let particles = [];
+    const MAX_PARTICLES = 75;
+
+    function resizeWeatherCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeWeatherCanvas);
+    resizeWeatherCanvas();
+
+    class WeatherParticle {
+      constructor(type) {
+        this.reset(type);
+      }
+      reset(type) {
+        this.type = type;
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * -canvas.height;
+        if (type === 'chuva') {
+          this.length = 9 + Math.random() * 7;
+          this.speedY = 12 + Math.random() * 6;
+          this.speedX = -2;
+        } else if (type === 'neve') {
+          this.radius = 1.5 + Math.random() * 2.5;
+          this.speedY = 1.2 + Math.random() * 1.8;
+          this.speedX = Math.sin(Math.random() * 5) * 0.8 - 0.5;
+        }
+      }
+      update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        if (this.y > canvas.height) {
+          this.reset(this.type);
+          this.y = 0;
+        }
+      }
+      draw() {
+        if (this.type === 'chuva') {
+          ctx.strokeStyle = 'rgba(210, 235, 255, 0.7)';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y);
+          ctx.lineTo(this.x + this.speedX, this.y + this.length);
+          ctx.stroke();
+        } else if (this.type === 'neve') {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    function initWeather(type) {
+      currentWeather = type;
+      particles = [];
+      if (type !== 'limpo') {
+        for (let i = 0; i < MAX_PARTICLES; i++) {
+          particles.push(new WeatherParticle(type));
+        }
+      }
+    }
+
+    function weatherLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (currentWeather !== 'limpo') {
+        particles.forEach(p => {
+          p.update();
+          p.draw();
+        });
+      }
+      requestAnimationFrame(weatherLoop);
+    }
+    weatherLoop();
+
+    const btnWeatherChuva = document.getElementById('btnWeatherChuva');
+    const btnWeatherNeve = document.getElementById('btnWeatherNeve');
+    const btnWeatherLimpo = document.getElementById('btnWeatherLimpo');
+    const weatherBtns = [btnWeatherChuva, btnWeatherNeve, btnWeatherLimpo];
+
+    function setWeather(btn, type) {
+      weatherBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      weatherDarken.style.opacity = type === 'chuva' ? '1' : '0';
+      weatherSnowTint.style.opacity = type === 'neve' ? '1' : '0';
+
+      initWeather(type);
+      updateAudioWeather(type);
+    }
+
+    btnWeatherChuva.addEventListener('click', () => setWeather(btnWeatherChuva, 'chuva'));
+    btnWeatherNeve.addEventListener('click', () => setWeather(btnWeatherNeve, 'neve'));
+    btnWeatherLimpo.addEventListener('click', () => setWeather(btnWeatherLimpo, 'limpo'));
+
+    /* ============================================================
+       6. MOTOR DE ÁUDIO LOFI NATIVO (WEB AUDIO API - ZERO ARQUIVOS EXTERNOS)
+       ============================================================ */
+    let audioCtx = null;
+    let isAudioPlaying = false;
+    let rainGain = null;
+    let lofiTimer = null;
+
+    const btnAudioToggle = document.getElementById('btnAudioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+
+    function initWebAudio() {
+      if (audioCtx) return;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContext();
+
+      // Ruído de Chuva (Pink/White Filtered Noise)
+      const bufferSize = audioCtx.sampleRate * 2;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+      const whiteNoise = audioCtx.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+      whiteNoise.loop = true;
+
+      const rainFilter = audioCtx.createBiquadFilter();
+      rainFilter.type = 'lowpass';
+      rainFilter.frequency.setValueAtTime(900, audioCtx.currentTime);
+
+      rainGain = audioCtx.createGain();
+      rainGain.gain.setValueAtTime(0, audioCtx.currentTime);
+
+      whiteNoise.connect(rainFilter);
+      rainFilter.connect(rainGain);
+      rainGain.connect(audioCtx.destination);
+      whiteNoise.start();
+
+      // Batida rítmica dos trilhos de trem ("Ta-tum... ta-tum...")
+      startTrainTrackRhythm();
+
+      // Música Lofi Relaxante Sintetizada
+      startLofiChordsLoop();
+    }
+
+    function startTrainTrackRhythm() {
+      setInterval(() => {
+        if (!isAudioPlaying || !audioCtx) return;
+        playRailClick(0);
+        playRailClick(120);
+      }, 1300);
+    }
+
+    function playRailClick(delayMs) {
+      setTimeout(() => {
+        if (!isAudioPlaying || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(85, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.09);
+      }, delayMs);
+    }
+
+    // Progressão Harmônica Lofi Jazz (Tons quentes de Rhodes)
+    const lofiChords = [
+      [261.63, 329.63, 392.00, 493.88], // Cmaj7
+      [220.00, 261.63, 329.63, 392.00], // Am7
+      [174.61, 220.00, 261.63, 329.63], // Fmaj7
+      [196.00, 246.94, 293.66, 349.23]  // G7
+    ];
+    let chordIdx = 0;
+
+    function startLofiChordsLoop() {
+      function triggerNextChord() {
+        if (isAudioPlaying && audioCtx) {
+          const chord = lofiChords[chordIdx];
+          chordIdx = (chordIdx + 1) % lofiChords.length;
+
+          chord.forEach(freq => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(550, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.8);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.8);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 4.0);
+          });
+        }
+        lofiTimer = setTimeout(triggerNextChord, 4000);
+      }
+      triggerNextChord();
+    }
+
+    function updateAudioWeather(type) {
+      if (!rainGain || !audioCtx) return;
+      if (type === 'chuva' && isAudioPlaying) {
+        rainGain.gain.setTargetAtTime(0.09, audioCtx.currentTime, 1);
+      } else {
+        rainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 1);
+      }
+    }
+
+    function playCoffeeSipSound() {
+      if (!audioCtx || !isAudioPlaying) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(520, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.2);
+    }
+
+    btnAudioToggle.addEventListener('click', () => {
+      initWebAudio();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      isAudioPlaying = !isAudioPlaying;
+      btnAudioToggle.classList.toggle('active', isAudioPlaying);
+      audioIcon.textContent = isAudioPlaying ? '🔊' : '🎵';
+      updateAudioWeather(currentWeather);
+    });
+  </script>
+</body>
+</html>
