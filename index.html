@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imersivo Lofi Train Study</title>
+  <style>
+    /* ============================================================
+       VARIÁVEIS DE COR E ESTILOS GERAIS (Papercut 2D)
+       ============================================================ */
+    :root {
+      /* Cabine de Dia */
+      --cabine-wall-day: #e2dcd0;
+      --cabine-frame-day: #7a583e;
+      --banco-1-day: #6ca0b8; /* Mais claro (perto da janela) */
+      --banco-2-day: #5b8fA7;
+      --banco-3-day: #4c7e96;
+      --banco-4-day: #3d6d85;
+      --banco-5-day: #2d5b73; /* Mais escuro (dentro da cabine) */
+      --mesa-1-day: #a9805a;
+      --mesa-2-day: #99714c;
+      --mesa-3-day: #89623e;
+      --mesa-4-day: #795331;
+      --mesa-5-day: #694424;
+
+      /* Cabine de Noite */
+      --cabine-wall-night: #1a1b2a;
+      --cabine-frame-night: #2e2329;
+      --banco-1-night: #2f4354;
+      --banco-2-night: #253644;
+      --banco-3-night: #1c2a35;
+      --banco-4-night: #152028;
+      --banco-5-night: #0e161c;
+      --mesa-1-night: #443224;
+      --mesa-2-night: #3a2a1d;
+      --mesa-3-night: #2f2217;
+      --mesa-4-night: #251a11;
+      --mesa-5-night: #1b120b;
+
+      /* Atuais */
+      --cabine-wall: var(--cabine-wall-day);
+      --cabine-frame: var(--cabine-frame-day);
+      --banco-1: var(--banco-1-day);
+      --banco-2: var(--banco-2-day);
+      --banco-3: var(--banco-3-day);
+      --banco-4: var(--banco-4-day);
+      --banco-5: var(--banco-5-day);
+      --mesa-1: var(--mesa-1-day);
+      --mesa-2: var(--mesa-2-day);
+      --mesa-3: var(--mesa-3-day);
+      --mesa-4: var(--mesa-4-day);
+      --mesa-5: var(--mesa-5-day);
+
+      /* Céus */
+      --sky-day-floresta: linear-gradient(180deg, #87ceeb 0%, #d4eefc 100%);
+      --sky-night: linear-gradient(180deg, #090a14 0%, #171b34 100%);
+      --sky-deserto-day: linear-gradient(180deg, #ff9e54 0%, #ffd084 100%);
+      --sky-deserto-night: linear-gradient(180deg, #1b0a1a 0%, #3e1b2f 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: #111217;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      color: #f0f0f0;
+      padding: 12px;
+    }
+
+    /* MOLDURA PRINCIPAL DO VAGÃO */
+    .train-stage {
+      position: relative;
+      width: 900px;
+      max-width: 96vw;
+      height: 600px;
+      background: var(--cabine-wall);
+      border: 14px solid var(--cabine-frame);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0,0,0,0.3);
+      transition: background 6s ease, border-color 6s ease;
+    }
+
+    /* JANELA QUADRADA ARREDONDADA */
+    .train-window {
+      position: absolute;
+      top: 35px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 580px;
+      height: 380px;
+      border-radius: 36px;
+      border: 12px solid #553823;
+      background: #87ceeb;
+      overflow: hidden;
+      box-shadow: inset 0 10px 25px rgba(0,0,0,0.4), 0 8px 16px rgba(0,0,0,0.3);
+      z-index: 2;
+    }
+
+    .body-night .train-window {
+      border-color: #241710;
+    }
+
+    /* REFLEXO DE VIDRO (MANCHA BRANCA DIAGONAL) */
+    .glass-glare {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(125deg, 
+        rgba(255,255,255,0.32) 0%, 
+        rgba(255,255,255,0.18) 22%, 
+        rgba(255,255,255,0.02) 23%, 
+        rgba(255,255,255,0.0) 45%, 
+        rgba(255,255,255,0.15) 55%, 
+        rgba(255,255,255,0.0) 58%
+      );
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* CÉU E ASTROS */
+    .sky-canvas {
+      position: absolute;
+      inset: 0;
+      background: var(--sky-day-floresta);
+      transition: background 6s ease;
+      z-index: 1;
+    }
+
+    .stars-layer {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 6s ease;
+      z-index: 2;
+      background-image: 
+        radial-gradient(2px 2px at 40px 60px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 140px 120px, #fff8db, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 280px 40px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 390px 90px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 490px 50px, #fff5cc, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 200px 160px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 330px 150px, #ffffff, rgba(0,0,0,0));
+      background-repeat: repeat;
+      animation: twinkle 3s infinite alternate;
+    }
+
+    @keyframes twinkle {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    /* SOL E LUA */
+    .celestial-orbit {
+      position: absolute;
+      width: 72px;
+      height: 72px;
+      left: 70px;
+      top: 50px;
+      z-index: 3;
+      cursor: pointer;
+      transition: transform 6s cubic-bezier(0.4, 0, 0.2, 1), opacity 6s ease;
+    }
+
+    .sun-body {
+      width: 100%;
+      height: 100%;
+      background: #ffdb4d;
+      border-radius: 50%;
+      box-shadow: 0 0 35px #ffa834, 0 0 10px #fff;
+      transition: all 6s ease;
+    }
+
+    .moon-body {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      box-shadow: -15px 6px 0 0 #f4f6ce;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: all 6s ease;
+      filter: drop-shadow(0 0 16px rgba(244, 246, 206, 0.8));
+    }
+
+    /* ESTADO NOITE PARA ASTROS */
+    .is-night .sun-body {
+      opacity: 0;
+      transform: translateY(120px) scale(0.6);
+    }
+    .is-night .moon-body {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .is-night .stars-layer {
+      opacity: 1;
+    }
+
+    /* ============================================================
+       CAMADAS DE PAISAGEM (PARALLAX PAPERCUT)
+       ============================================================ */
+    .layer-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      overflow: hidden;
+    }
+
+    /* Camadas 1, 2, 3: Colinas em Movimento Contínuo */
+    .hills-row {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 100%;
+      display: flex;
+    }
+
+    .layer-1 {
+      z-index: 5;
+      animation: parallaxMove 38s linear infinite;
+    }
+    .layer-2 {
+      z-index: 6;
+      animation: parallaxMove 24s linear infinite;
+    }
+    .layer-3 {
+      z-index: 7;
+      animation: parallaxMove 14s linear infinite;
+    }
+
+    @keyframes parallaxMove {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .hill-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      transition: fill 6s ease;
+    }
+
+    /* Camada 4 (7s) e 5 (4s) - Árvores / Prédios / Cactos individuais */
+    .layer-active-4, .layer-active-5 {
+      position: absolute;
+      bottom: 22px;
+      right: -120px;
+      z-index: 8;
+    }
+    .layer-active-5 {
+      z-index: 9;
+      bottom: 15px;
+    }
+
+    .anim-pass-4 {
+      animation: passObject 7s linear infinite;
+    }
+    .anim-pass-5 {
+      animation: passObject 4s linear infinite;
+    }
+
+    @keyframes passObject {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-720px); }
+    }
+
+    /* Camada 6 (Postes de Luz a cada 2s) */
+    .layer-poles {
+      position: absolute;
+      bottom: 0;
+      right: -80px;
+      width: 32px;
+      height: 250px;
+      z-index: 10;
+      animation: passObject 2s linear infinite;
+    }
+
+    .pole-stem {
+      position: absolute;
+      bottom: 0;
+      left: 14px;
+      width: 6px;
+      height: 220px;
+      background: #3a3b40;
+    }
+    .pole-lamp {
+      position: absolute;
+      top: 30px;
+      left: 4px;
+      width: 26px;
+      height: 14px;
+      background: #8b929a;
+      border-radius: 8px 8px 3px 3px;
+      transition: background 6s, box-shadow 6s;
+    }
+    .pole-glow {
+      position: absolute;
+      top: 40px;
+      left: 2px;
+      width: 30px;
+      height: 30px;
+      background: radial-gradient(circle, rgba(255,230,120,0.85) 0%, rgba(255,230,120,0) 70%);
+      opacity: 0;
+      border-radius: 50%;
+      transition: opacity 6s;
+    }
+    .is-night .pole-lamp {
+      background: #ffe366;
+      box-shadow: 0 0 16px #ffcc00;
+    }
+    .is-night .pole-glow {
+      opacity: 1;
+    }
+
+    /* ESPECIFICIDADES DOS CENÁRIOS */
+    /* Cidade: Prédios e Carros */
+    .city-block {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+    }
+    .building {
+      width: 48px;
+      background: #485265;
+      border-radius: 4px 4px 0 0;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+      padding: 6px 5px;
+      transition: background 6s;
+    }
+    .b-window {
+      width: 9px;
+      height: 12px;
+      background: #8993a4;
+      border-radius: 2px;
+      transition: background 6s;
+    }
+    .is-night .building {
+      background: #1e2430;
+    }
+    .is-night .b-window.lit {
+      background: #ffe677;
+      box-shadow: 0 0 6px #ffd54f;
+    }
+
+    .city-cars-track {
+      position: absolute;
+      bottom: 2px;
+      left: 0;
+      width: 100%;
+      height: 20px;
+      z-index: 11;
+      display: none;
+    }
+    .car {
+      position: absolute;
+      bottom: 2px;
+      height: 12px;
+      background: #d84343;
+      border-radius: 4px 4px 1px 1px;
+    }
+    .car-1 { width: 34px; animation: carDrive 4.5s linear infinite; }
+    .car-2 { width: 44px; background: #3e72b4; animation: carDrive 6.5s linear infinite 2s; }
+    @keyframes carDrive {
+      0% { right: -60px; }
+      100% { right: 650px; }
+    }
+
+    /* Oceano: Grades e Ondas Brancas Piscando */
+    .ocean-waves-container {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 130px;
+      z-index: 6;
+      display: none;
+      overflow: hidden;
+      background: #1b739e;
+      transition: background 6s;
+    }
+    .is-night .ocean-waves-container {
+      background: #092e42;
+    }
+    .wave-line {
+      position: absolute;
+      height: 3px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 3px;
+      animation: waveBlink 2.2s infinite ease-in-out;
+    }
+    @keyframes waveBlink {
+      0%, 100% { opacity: 0.15; transform: scaleX(0.8); }
+      50% { opacity: 0.95; transform: scaleX(1.1); }
+    }
+    .ocean-railing {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 34px;
+      border-top: 3px solid #6b7c85;
+      background: repeating-linear-gradient(90deg, transparent, transparent 18px, #6b7c85 18px, #6b7c85 22px);
+      z-index: 12;
+      display: none;
+    }
+
+    /* Deserto: Cactos */
+    .cactus-svg {
+      fill: #2d6b46;
+      transition: fill 6s;
+    }
+    .is-night .cactus-svg {
+      fill: #143522;
+    }
+
+    /* CLIMA (Canvas para Chuva e Neve) */
+    #weatherCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      pointer-events: none;
+    }
+    .weather-darken {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      z-index: 14;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.5s ease;
+    }
+    .weather-snow-tint {
+      position: absolute;
+      inset: 0;
+      background: rgba(240, 248, 255, 0.28);
+      z-index: 14;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.5s ease;
+    }
+
+    /* ============================================================
+       INTERIOR DO VAGÃO (BANCOS, MESA, OBJETOS)
+       ============================================================ */
+    .wagon-interior {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    /* BANCOS ERGONÔMICOS (L invertido com 5 tons de cor) */
+    .seat {
+      position: absolute;
+      bottom: -15px;
+      width: 125px;
+      height: 290px;
+      pointer-events: auto;
+    }
+    .seat-left {
+      left: 30px;
+    }
+    .seat-right {
+      right: 30px;
+      transform: scaleX(-1); /* Simetria ergonômica */
+    }
+
+    /* 5 faixas de cores do banco (#1 mais claro virado para janela) */
+    .seat-body {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 42px 24px 0 0;
+      overflow: hidden;
+      display: flex;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+    }
+    .seat-stripe {
+      height: 100%;
+      flex: 1;
+      transition: background 6s ease;
+    }
+    /* Costura vertical no meio para dar profundidade sem 3D */
+    .seat-seam {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 80%;
+      background: rgba(255,255,255,0.22);
+      border-radius: 2px;
+    }
+    /* Encosto de cabeça ligeiramente arredondado e mais largo */
+    .seat-headrest {
+      position: absolute;
+      top: 0;
+      left: -6px;
+      width: 137px;
+      height: 75px;
+      border-radius: 35px 35px 20px 20px;
+      background: inherit;
+      overflow: hidden;
+      display: flex;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+
+    /* MESA CENTRALIZADA (Regra das 5 cores em degradê de faixas) */
+    .table-container {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 320px;
+      height: 165px;
+      pointer-events: auto;
+    }
+    .table-top {
+      width: 100%;
+      height: 38px;
+      border-radius: 12px 12px 4px 4px;
+      display: flex;
+      overflow: hidden;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.4);
+    }
+    .table-stripe {
+      height: 100%;
+      flex: 1;
+      transition: background 6s ease;
+    }
+    .table-pedestal {
+      width: 80px;
+      height: 127px;
+      margin: 0 auto;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       OBJETOS EM CIMA DA MESA
+       ============================================================ */
+    .table-items {
+      position: absolute;
+      top: -48px;
+      left: 0;
+      width: 100%;
+      height: 48px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    /* 1. RELÓGIO ANALÓGICO (Precisão matemática + 3 tons) */
+    .clock-wrapper {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      margin-bottom: 6px;
+    }
+    /* Moldura circular perfeita de 3 tons */
+    .clock-frame-tone-1 {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #70757d;
+      padding: 3px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+      transition: background 6s;
+    }
+    .clock-frame-tone-2 {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #4b5056;
+      padding: 3px;
+      transition: background 6s;
+    }
+    .clock-frame-tone-3 {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #2f3237;
+      position: relative;
+      transition: background 6s;
+    }
+    /* Mostrador branco recuado */
+    .clock-dial {
+      position: absolute;
+      inset: 2px;
+      background: #ffffff;
+      border-radius: 50%;
+    }
+    /* 12 Marcadores colados à borda interna */
+    .clock-ticks {
+      position: absolute;
+      inset: 0;
+    }
+    .tick {
+      position: absolute;
+      left: 50%;
+      top: 1px;
+      width: 1.5px;
+      height: 3.5px;
+      background: #222;
+      transform-origin: 50% 21px; /* raio exato */
+      margin-left: -0.75px;
+    }
+    /* Ponteiros (Comprimento estritamente menor que o raio) */
+    .needle {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      transform-origin: 50% 100%;
+      border-radius: 2px;
+    }
+    .needle-hour {
+      width: 2.2px;
+      height: 11px;
+      background: #202020;
+      margin-left: -1.1px;
+    }
+    .needle-minute {
+      width: 1.6px;
+      height: 15px;
+      background: #3b3b3b;
+      margin-left: -0.8px;
+    }
+    .needle-second {
+      width: 1px;
+      height: 17px;
+      background: #d32f2f;
+      margin-left: -0.5px;
+    }
+    .clock-center-dot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 3.5px;
+      height: 3.5px;
+      background: #202020;
+      border-radius: 50%;
+      z-index: 5;
+    }
+
+    /* 2. XÍCARA DE CAFÉ TRANSPARENTE (ÚNICA INTERATIVA) */
+    .coffee-interactive {
+      position: relative;
+      width: 34px;
+      height: 38px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+    }
+    /* Corpo translúcido */
+    .cup-glass {
+      position: absolute;
+      bottom: 0;
+      left: 2px;
+      width: 24px;
+      height: 32px;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px 2px 8px 8px;
+      overflow: hidden;
+      backdrop-filter: blur(1px);
+    }
+    /* Líquido (Café marrom com scaleY decrescente) */
+    .cup-liquid {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 24px;
+      background: #5c341b;
+      transform-origin: bottom center;
+      transition: transform 0.25s linear;
+      border-top: 1px solid #7c4826;
+    }
+    /* Alça no terço central fundida ao corpo */
+    .cup-handle {
+      position: absolute;
+      right: 1px;
+      top: 10px;
+      width: 10px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      border-left: none;
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* 3. LIVROS DEITADOS (3 Retângulos sobrepostos) */
+    .books-stack {
+      position: relative;
+      width: 58px;
+      height: 24px;
+      margin-bottom: 2px;
+    }
+    /* Livro de Baixo */
+    .book-layer-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 56px;
+      height: 8px;
+      background: #2b4c7e; /* 3 tons: capa 1 */
+      border-radius: 2px;
+    }
+    .book-layer-pages {
+      position: absolute;
+      bottom: 2px;
+      left: 4px;
+      width: 50px;
+      height: 5px;
+      background: #fbf9e8; /* páginas */
+      border-radius: 1px;
+    }
+    .book-layer-top {
+      position: absolute;
+      bottom: 6px;
+      left: 1px;
+      width: 53px;
+      height: 2.5px;
+      background: #1e3557; /* capa 3 */
+      border-radius: 2px;
+    }
+    /* Livro de Cima (levemente deslocado) */
+    .book-upper {
+      position: absolute;
+      bottom: 9px;
+      left: 4px;
+      width: 48px;
+      height: 9px;
+    }
+    .book-upper-back {
+      position: absolute;
+      bottom: 0;
+      width: 48px;
+      height: 7px;
+      background: #8b3a3a;
+      border-radius: 2px;
+    }
+    .book-upper-pages {
+      position: absolute;
+      bottom: 1.5px;
+      left: 3px;
+      width: 43px;
+      height: 4px;
+      background: #fdfcee;
+    }
+    .book-upper-cover {
+      position: absolute;
+      bottom: 5px;
+      left: 1px;
+      width: 46px;
+      height: 2px;
+      background: #632626;
+    }
+
+    /* CARTÃO DE RECADOS AO LADO DA JANELA */
+    .note-guide {
+      position: absolute;
+      right: 28px;
+      top: 50px;
+      width: 110px;
+      background: #fffbe6;
+      color: #3f3627;
+      padding: 10px 9px;
+      border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      border-left: 4px solid #d4a343;
+      font-size: 11px;
+      line-height: 1.35;
+      z-index: 26;
+      pointer-events: auto;
+      transition: background 6s, color 6s;
+    }
+    .body-night .note-guide {
+      background: #2b2820;
+      color: #e5d8b8;
+      border-left-color: #8c6a28;
+    }
+
+    /* PAINEL DE CONTROLE EXTERNO */
+    .ui-controls {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      max-width: 900px;
+    }
+    .btn-group {
+      display: flex;
+      background: #1e2029;
+      border-radius: 12px;
+      padding: 4px;
+      border: 1px solid #323544;
+      gap: 4px;
+    }
+    .btn {
+      background: transparent;
+      color: #b8bed1;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: #2a2e3d;
+      color: #fff;
+    }
+    .btn.active {
+      background: #475a8a;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(71, 90, 138, 0.4);
+    }
+    .btn-audio {
+      background: #2c382e;
+      border: 1px solid #4a634e;
+      color: #a8dfb0;
+    }
+    .btn-audio.active {
+      background: #396f43;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PALCO DO VAGÃO (Imersivo Lofi Train Study) -->
+  <div class="train-stage" id="trainStage">
+    
+    <!-- JANELA DO TREM (Estilo Moldura Papercut 2D) -->
+    <div class="train-window" id="trainWindow">
+      
+      <!-- Reflexo e Refração de Vidro -->
+      <div class="glass-glare"></div>
+
+      <!-- Canvas de Chuva e Neve -->
+      <canvas id="weatherCanvas"></canvas>
+      <div class="weather-darken" id="weatherDarken"></div>
+      <div class="weather-snow-tint" id="weatherSnowTint"></div>
+
+      <!-- Céu & Estrelas Cintilantes -->
+      <div class="sky-canvas" id="skyCanvas"></div>
+      <div class="stars-layer" id="starsLayer"></div>
+
+      <!-- Sol e Lua Minguante (Clique para alternar) -->
+      <div class="celestial-orbit" id="celestialOrbit" title="Clique no Sol ou na Lua para alternar o tempo">
+        <div class="sun-body" id="sunBody"></div>
+        <div class="moon-body" id="moonBody"></div>
+      </div>
+
+      <!-- CAMADAS DE PAISAGEM (Parallax) -->
+      <div class="layer-container" id="layerContainer">
+        
+        <!-- Camada 1: Colinas Distantes (Não tampa sol/lua) -->
+        <div class="hills-row layer-1" id="layer1Hills">
+          <svg class="hill-svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
+            <path id="pathHill1" d="M0,230 Q280,140 600,220 T1200,200 L1200,400 L0,400 Z" fill="#629b82"/>
+          </svg>
+          <svg class="hill-svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
+            <path id="pathHill1b" d="M0,200 Q280,140 600,220 T1200,200 L1200,400 L0,400 Z" fill="#629b82"/>
+          </svg>
+        </div>
+
+        <!-- Camada 2: Colinas Médias (Mais claras que a 1) -->
+        <div class="hills-row layer-2" id="layer2Hills">
+          <svg class="hill-svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
+            <path id="pathHill2" d="M0,280 Q320,200 680,270 T1200,250 L1200,400 L0,400 Z" fill="#78b095"/>
+          </svg>
+          <svg class="hill-svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
+            <path id="pathHill2b" d="M0,250 Q320,200 680,270 T1200,250 L1200,400 L0,400 Z" fill="#78b095"/>
+          </svg>
+        </div>
+
+        <!-- Camada 3: Base Terrestre / Colina Próxima -->
+        <div class="hills-row layer-3" id="layer3Hills">
+          <svg class="hill-svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
+            <path id="pathHill3" d="M0,330 Q220,280 500,320 T1200,310 L1200,400 L0,400 Z" fill="#4d7f69"/>
+          </svg>
+          <svg class="hill-svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
+            <path id="pathHill3b" d="M0,310 Q220,280 500,320 T1200,310 L1200,400 L0,400 Z" fill="#4d7f69"/>
+          </svg>
+        </div>
+
+        <!-- Camada Oceano: Mar, Ondas e Grade -->
+        <div class="ocean-waves-container" id="oceanWavesContainer">
+          <div class="wave-line" style="top: 25px; left: 40px; width: 55px; animation-delay: 0.1s;"></div>
+          <div class="wave-line" style="top: 45px; left: 160px; width: 70px; animation-delay: 0.8s;"></div>
+          <div class="wave-line" style="top: 30px; left: 320px; width: 45px; animation-delay: 1.4s;"></div>
+          <div class="wave-line" style="top: 75px; left: 80px; width: 85px; animation-delay: 0.5s;"></div>
+          <div class="wave-line" style="top: 60px; left: 250px; width: 60px; animation-delay: 1.9s;"></div>
+          <div class="wave-line" style="top: 90px; left: 400px; width: 75px; animation-delay: 1.1s;"></div>
+        </div>
+        <div class="ocean-railing" id="oceanRailing"></div>
+
+        <!-- Camada Cidade: Pista de Carrinhos na Base -->
+        <div class="city-cars-track" id="cityCarsTrack">
+          <div class="car car-1"></div>
+          <div class="car car-2"></div>
+        </div>
+
+        <!-- Camada 4: Elementos Ativos Ciclo 7s (Árvores / Prédios / Cactos) -->
+        <div class="layer-active-4 anim-pass-4" id="layerActive4"></div>
+
+        <!-- Camada 5: Elementos Ativos Ciclo 4s (Árvores / Prédios / Cactos) -->
+        <div class="layer-active-5 anim-pass-5" id="layerActive5"></div>
+
+        <!-- Camada 6: Postes Rápidos Ciclo 2s (Desligado de dia, aceso de noite) -->
+        <div class="layer-poles" id="layerPoles">
+          <div class="pole-stem"></div>
+          <div class="pole-lamp"></div>
+          <div class="pole-glow"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BILHETE GUIA NA PAREDE DO VAGÃO -->
+    <div class="note-guide">
+      📌 <strong>Dica Lofi:</strong><br>
+      Ao clicar no sol ele se põe e nasce a lua. Clique na xícara para tomar seu café!
+    </div>
+
+    <!-- INTERIOR DO VAGÃO -->
+    <div class="wagon-interior">
+
+      <!-- BANCO ESQUERDO (5 tons, #1 mais claro voltado para a janela) -->
+      <div class="seat seat-left">
+        <div class="seat-headrest">
+          <div class="seat-stripe" style="background: var(--banco-5);"></div>
+          <div class="seat-stripe" style="background: var(--banco-4);"></div>
+          <div class="seat-stripe" style="background: var(--banco-3);"></div>
+          <div class="seat-stripe" style="background: var(--banco-2);"></div>
+          <div class="seat-stripe" style="background: var(--banco-1);"></div>
+        </div>
+        <div class="seat-body">
+          <div class="seat-stripe" style="background: var(--banco-5);"></div>
+          <div class="seat-stripe" style="background: var(--banco-4);"></div>
+          <div class="seat-stripe" style="background: var(--banco-3);"></div>
+          <div class="seat-stripe" style="background: var(--banco-2);"></div>
+          <div class="seat-stripe" style="background: var(--banco-1);"></div>
+          <div class="seat-seam"></div>
+        </div>
+      </div>
+
+      <!-- BANCO DIREITO (Simétrico, 5 tons, #1 virado para a janela) -->
+      <div class="seat seat-right">
+        <div class="seat-headrest">
+          <div class="seat-stripe" style="background: var(--banco-5);"></div>
+          <div class="seat-stripe" style="background: var(--banco-4);"></div>
+          <div class="seat-stripe" style="background: var(--banco-3);"></div>
+          <div class="seat-stripe" style="background: var(--banco-2);"></div>
+          <div class="seat-stripe" style="background: var(--banco-1);"></div>
+        </div>
+        <div class="seat-body">
+          <div class="seat-stripe" style="background: var(--banco-5);"></div>
+          <div class="seat-stripe" style="background: var(--banco-4);"></div>
+          <div class="seat-stripe" style="background: var(--banco-3);"></div>
+          <div class="seat-stripe" style="background: var(--banco-2);"></div>
+          <div class="seat-stripe" style="background: var(--banco-1);"></div>
+          <div class="seat-seam"></div>
+        </div>
+      </div>
+
+      <!-- MESA CENTRAL (5 faixas tonais) -->
+      <div class="table-container">
+        
+        <!-- Itens em cima da mesa -->
+        <div class="table-items">
+
+          <!-- 1. RELÓGIO ANALÓGICO (Hora real, 3 tons, 12 marcadores matemáticos) -->
+          <div class="clock-wrapper" title="Relógio Analógico em tempo real">
+            <div class="clock-frame-tone-1">
+              <div class="clock-frame-tone-2">
+                <div class="clock-frame-tone-3">
+                  <div class="clock-dial">
+                    <!-- 12 Marcadores colados -->
+                    <div class="clock-ticks" id="clockTicks"></div>
+                    <!-- Ponteiros ancorados exatamente no centro -->
+                    <div class="needle needle-hour" id="needleHour"></div>
+                    <div class="needle needle-minute" id="needleMinute"></div>
+                    <div class="needle needle-second" id="needleSecond"></div>
+                    <div class="clock-center-dot"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. XÍCARA TRANSPARENTE (Único objeto com interação direta) -->
+          <div class="coffee-interactive" id="coffeeCup" title="Clique para beber um gole de café!">
+            <div class="cup-glass">
+              <div class="cup-liquid" id="cupLiquid"></div>
+            </div>
+            <div class="cup-handle"></div>
+          </div>
+
+          <!-- 3. LIVROS DEITADOS (3 camadas sobrepostas) -->
+          <div class="books-stack" title="Livros de Estudo Lofi">
+            <!-- Livro 1 -->
+            <div class="book-layer-bottom"></div>
+            <div class="book-layer-pages"></div>
+            <div class="book-layer-top"></div>
+            <!-- Livro 2 em cima -->
+            <div class="book-upper">
+              <div class="book-upper-back"></div>
+              <div class="book-upper-pages"></div>
+              <div class="book-upper-cover"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tampo da mesa (5 faixas horizontais de luz e sombra) -->
+        <div class="table-top">
+          <div class="table-stripe" style="background: var(--mesa-1);"></div>
+          <div class="table-stripe" style="background: var(--mesa-2);"></div>
+          <div class="table-stripe" style="background: var(--mesa-3);"></div>
+          <div class="table-stripe" style="background: var(--mesa-4);"></div>
+          <div class="table-stripe" style="background: var(--mesa-5);"></div>
+        </div>
+        <!-- Suporte da mesa -->
+        <div class="table-pedestal">
+          <div class="table-stripe" style="background: var(--mesa-1);"></div>
+          <div class="table-stripe" style="background: var(--mesa-2);"></div>
+          <div class="table-stripe" style="background: var(--mesa-3);"></div>
+          <div class="table-stripe" style="background: var(--mesa-4);"></div>
+          <div class="table-stripe" style="background: var(--mesa-5);"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PAINEL DE CONTROLES (CENÁRIOS, CLIMA E ÁUDIO) -->
+  <div class="ui-controls">
+    <!-- Cenários -->
+    <div class="btn-group">
+      <button class="btn active" id="btnSceneryFloresta">🌲 Floresta</button>
+      <button class="btn" id="btnSceneryCidade">🏙️ Cidade</button>
+      <button class="btn" id="btnSceneryOceano">🌊 Oceano</button>
+      <button class="btn" id="btnSceneryDeserto">🏜️ Deserto</button>
+    </div>
+
+    <!-- Clima -->
+    <div class="btn-group">
+      <button class="btn" id="btnWeatherChuva">🌧️ Chuva</button>
+      <button class="btn" id="btnWeatherNeve">❄️ Neve</button>
+      <button class="btn active" id="btnWeatherLimpo">☀️ Limpo</button>
+    </div>
+
+    <!-- Áudio & Imersão Lofi -->
+    <button class="btn btn-audio" id="btnAudioToggle">
+      <span id="audioIcon">🎵</span> Áudio Lofi & Trem
+    </button>
+  </div>
+
+  <!-- ============================================================
+       SCRIPTS JAVASCRIPT
+       ============================================================ -->
+  <script>
+    /* ============================================================
+       1. RELÓGIO ANALÓGICO COM HORÁRIO REAL E 12 MARCADORES
+       ============================================================ */
+    const clockTicks = document.getElementById('clockTicks');
+    for (let i = 0; i < 12; i++) {
+      const tick = document.createElement('div');
+      tick.className = 'tick';
+      tick.style.transform = `rotate(${i * 30}deg)`;
+      clockTicks.appendChild(tick);
+    }
+
+    const needleHour = document.getElementById('needleHour');
+    const needleMinute = document.getElementById('needleMinute');
+    const needleSecond = document.getElementById('needleSecond');
+
+    function updateRealTimeClock() {
+      const now = new Date();
+      const s = now.getSeconds();
+      const m = now.getMinutes() + s / 60;
+      const h = (now.getHours() % 12) + m / 60;
+
+      needleSecond.style.transform = `rotate(${s * 6}deg)`;
+      needleMinute.style.transform = `rotate(${m * 6}deg)`;
+      needleHour.style.transform = `rotate(${h * 30}deg)`;
+    }
+    setInterval(updateRealTimeClock, 1000);
+    updateRealTimeClock();
+
+    /* ============================================================
+       2. XÍCARA DE CAFÉ INTERATIVA (Esvaziamento gradual em Loop)
+       ============================================================ */
+    const coffeeCup = document.getElementById('coffeeCup');
+    const cupLiquid = document.getElementById('cupLiquid');
+    let coffeeLevel = 1.0;
+    let isDrinking = false;
+
+    coffeeCup.addEventListener('click', () => {
+      if (isDrinking) return;
+      isDrinking = true;
+
+      // Reproduz som de beber via Web Audio API se o áudio estiver ativo
+      playCoffeeSipSound();
+
+      const sipInterval = setInterval(() => {
+        coffeeLevel -= 0.2;
+        if (coffeeLevel <= 0.05) {
+          cupLiquid.style.transform = `scaleY(0)`;
+          clearInterval(sipInterval);
+          // Reset instantâneo após esvaziar
+          setTimeout(() => {
+            coffeeLevel = 1.0;
+            cupLiquid.style.transform = `scaleY(1)`;
+            isDrinking = false;
+          }, 900);
+        } else {
+          cupLiquid.style.transform = `scaleY(${coffeeLevel})`;
+        }
+      }, 160);
+    });
+
+    /* ============================================================
+       3. TRANSIÇÃO DIA <-> NOITE (6 SEGUNDOS)
+       ============================================================ */
+    const trainStage = document.getElementById('trainStage');
+    const celestialOrbit = document.getElementById('celestialOrbit');
+    let isNightMode = false;
+
+    celestialOrbit.addEventListener('click', toggleDayNightCycle);
+
+    function toggleDayNightCycle() {
+      isNightMode = !isNightMode;
+      trainStage.classList.toggle('is-night', isNightMode);
+      document.body.classList.toggle('body-night', isNightMode);
+
+      // Atualiza variáveis CSS da Cabine (Regra de luz e escuridão de 5 cores)
+      const root = document.documentElement;
+      if (isNightMode) {
+        root.style.setProperty('--cabine-wall', 'var(--cabine-wall-night)');
+        root.style.setProperty('--cabine-frame', 'var(--cabine-frame-night)');
+        root.style.setProperty('--banco-1', 'var(--banco-1-night)');
+        root.style.setProperty('--banco-2', 'var(--banco-2-night)');
+        root.style.setProperty('--banco-3', 'var(--banco-3-night)');
+        root.style.setProperty('--banco-4', 'var(--banco-4-night)');
+        root.style.setProperty('--banco-5', 'var(--banco-5-ni
